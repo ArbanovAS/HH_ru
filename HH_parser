@@ -117,7 +117,7 @@ hh_df['date'] = hh_df['date'].replace({' января ': '.01.', ' феврал�
 
 hh_df = hh_df[pd.to_datetime(hh_df['date'], dayfirst=True) >= '01.01.2021']
 
-#Очистка
+##Очистка
 hh_df = hh_df.replace(to_replace ='\xa0', value = '', regex = True)
 
 
