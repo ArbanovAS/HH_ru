@@ -6,17 +6,16 @@ from datetime import datetime
 from selenium import webdriver
 
 
-page=requests.get('https://hh.ru/articles/site-news?hhtmFrom=main')
-
-
-def get_links(soup):
+#Функция для получения ссылок
+def get_links_HH(soup):
     links_content = soup.find_all('a', class_="bloko-link bloko-link_kind-tertiary")
     # Извлекаем ссылки из найденных элементов
     links = ['https://hh.ru' + link.get('href') for link in links_content]
     # Извлекаем названия из найденных элементов
     titles = [link.text for link in links_content]
-    df = pd.DataFrame({'links': links, 'text': titles})
-    return df[df['text'] != ''].reset_index().iloc[:,1:]
+    df = pd.DataFrame({'links': links, 'titles': titles})
+
+    return df[df['titles'] != ''].reset_index().iloc[:,1:]
 
 df = pd.DataFrame({'links': [], 'text': []})
 
@@ -42,41 +41,43 @@ df.to_excel('HH RU.xlsx', index=False)
 read_df = pd.read_excel('HH RU.xlsx', index_col=None, header=0)
 
 
-
-def get_content(soup):
+#Функция для получения получения даты, текста, заголовка
+def get_content_HH(soup):
     articles_soup = \
-    soup.find_all('div', class_='bloko-column bloko-column_xs-4 bloko-column_s-8 bloko-column_m-9 bloko-column_l-10')
+    soup.find_all('div',class_='bloko-columnbloko-column_xs-
+    4bloko-column_s-8bloko-column_m-9 bloko-column_l-10')
+    
+    #Получили текст
+    articles_text = [a.text.replace('\xa0', ' ') for a in 
+    articles_soup][0]
 
-    articles_text = [a.text.replace('\xa0', ' ') for a in articles_soup][0]
+    articles_date = soup.find_all('div','cms-header-content__data')
 
-    articles_title = soup.find_all('h2')[0].text #было h1
+    date = articles_date[0].text.split('\n')[0]
+
+    articles_title = soup.find_all('h2')[0].text
 
     return [[articles_title], [articles_text], [date]]
 
 
+#Обработка полученных ссылок при помощи функции
 df = pd.DataFrame({'link': [], 'title': [], 'text': []})
 
 
 links = read_df.links[]
 
 
-from selenium import webdriver
+ for url in links:
 
-driver = webdriver.Chrome()
+      driver.get(url)
 
-for url in links:
-    driver.get(url)
-    soup = BeautifulSoup(driver.page_source, "html.parser")
+      soup = BeautifulSoup(driver.page_source, "html.parser")
+      text_date = get_content_HH(soup)
+      df2 = pd.DataFrame({'title': text_date[0],
+      'text': text_date[1], 'date': text_date[2]})
 
-    text_date = get_content(soup)
-
-    df2 = pd.DataFrame({'link': url, 'title': text_date[0], 'text': text_date[1]})
-
-    df = pd.concat([df, df2], ignore_index=True)
-
-    print(f'Получено содержимое для {url}, {datetime.now().strftime("%H:%M:%S")}')
-
-    #time.sleep(5)
+      df = pd.concat([df, df2], ignore_index=True)
+      # time.sleep(5)
 
 
 df['source'] = 'hh.ru'
@@ -84,27 +85,7 @@ read_df.to_csv('HH_ru.csv')
 
 hh_df = pd.read_csv('HH_contents.csv', index_col=0, header=0)
 
-#Получаем дату
-dates_list = []
 
-driver = webdriver.Chrome()
-
-for url in hh_df['link']:
-    driver.get(url)
-
-    soup = BeautifulSoup(driver.page_source, "html.parser")
-
-    date_iso = soup.find("meta", attrs={'name': 'mediator_published_time'})['content']
-
-    date_iso_split = date_iso.split('T')
-
-    date = datetime.fromisoformat(date_iso_split[0]).strftime("%d.%m.%Y")
-
-    dates_list.append(date)
-
-    print(f'Получено содержимое для {url}, {datetime.now().strftime("%H:%M:%S")}')
-
-    time.sleep(5)
 
 hh_df['date'] = hh_df['date'].replace({' января ': '.01.', ' февраля ': '.02.',
                                                   ' марта ': '.03.', ' апреля ': '.04.',
